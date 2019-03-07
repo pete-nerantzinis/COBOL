@@ -1,0 +1,66 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.
+           VBRDR.
+      *
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT INFILE ASSIGN TO INFILE.
+           SELECT OUTFILE ASSIGN TO OUTFILE.
+      *
+       DATA DIVISION.
+       FILE SECTION.
+       FD  INFILE
+           RECORD IS VARYING IN SIZE FROM 4 TO 80 CHARACTERS
+           DEPENDING ON RECORD-LENGTH.
+       01  IN-REC                  PIC X(80).
+       FD  OUTFILE.
+       01  OUT-REC                 PIC X(80).
+      *
+       WORKING-STORAGE SECTION.
+       77  EOF-FLAG                PIC XXX.
+       77  RECORD-CTR              PIC 999     VALUE 0.
+       77  RECORD-LENGTH           PIC 99      VALUE 0.
+       77  LOOP-CTR                PIC 999     VALUE 0.
+       77  DIAG-LINE               PIC X(132)  VALUE SPACES.
+       01  RPT-LINE.
+           05  REC-LEN             PIC Z9.
+           05                      PIC XXX.
+           05  LAST-NAME           PIC X(25).
+           05                      PIC X.
+           05  FIRST-NAME          PIC X(20).
+           05                      PIC XX.
+           05  STUDENT-ID          PIC X(4).
+           05                      PIC X(75).
+      *
+       01  TOTAL-REC-LINE.
+           05                      PIC X(20)   VALUE 'TOTAL RECORDS:'.
+           05                      PIC XX      VALUE SPACES.
+           05  RECORD-COUNT        PIC ZZZZZ9.
+           05                      PIC X(103)  VALUE SPACES.
+      *
+       PROCEDURE DIVISION.
+       MAIN-LINE-ROUTINE.
+           OPEN INPUT INFILE
+                OUTPUT OUTFILE.
+           MOVE 'NO' TO EOF-FLAG.
+           PERFORM UNTIL EOF-FLAG = 'YES'
+               READ INFILE
+                   AT END MOVE 'YES' TO EOF-FLAG
+                   NOT AT END PERFORM PROCESS-RECORD
+           END-PERFORM.
+           IF RECORD-CTR = 0
+               ADD 8 TO RETURN-CODE.
+           MOVE SPACES TO OUT-REC.
+           CLOSE INFILE
+                 OUTFILE.
+           STOP RUN.
+      *
+       PROCESS-RECORD.
+           MOVE SPACES TO DIAG-LINE.
+           MOVE RECORD-LENGTH TO DIAG-LINE(4:2).
+           MOVE IN-REC TO DIAG-LINE(10:RECORD-LENGTH).
+           WRITE OUT-REC FROM DIAG-LINE.
+           ADD 1 TO RECORD-CTR.
+           READ INFILE
+               AT END MOVE 'YES' TO EOF-FLAG.

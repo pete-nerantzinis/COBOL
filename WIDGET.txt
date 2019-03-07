@@ -1,0 +1,178 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.
+           WIDGET.
+      *
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT PAYROLL ASSIGN TO PAYROLL.
+           SELECT PAYRPT  ASSIGN TO PAYRPT.
+      *
+       DATA DIVISION.
+       FILE SECTION.
+       FD  PAYRPT.
+       01  RECORD-OUT              PIC X(80).
+       FD  PAYROLL.
+       01  PAYREC-IN.
+           05  EMP-FIRST           PIC X(20).
+           05  EMP-LAST            PIC X(15).
+           05  EMP-ID              PIC X(9).
+           05  EMP-PAYRATE         PIC 9(4)V99.
+           05  EMP-HOURS           PIC 99V99.
+           05  FILLER              PIC X(26) VALUE SPACES.
+      *
+       WORKING-STORAGE SECTION.
+       77  EOF-FLAG                PIC XXX.
+       77  BLANK-LINE              PIC X(80)   VALUE SPACES.
+       77  GROSSPAY                PIC 9(5)V99.
+       77  TOTAL-HOURS             PIC 9(5)V99.
+       77  TOTAL-GROSSPAY          PIC 9(6)V99.
+      *
+       01  REPORT-VALUES.
+           05  PAGE-NUMBER         PIC 9(4).
+           05  LINES-PRINTED       PIC 99      VALUE 66.
+           05  LINES-PER-PAGE      PIC 99      VALUE 66.
+           05  RECORD-COUNTER      PIC 9(4).
+      *
+       01  CURRENT-DATE-FIELDS     PIC X(21).
+       01  CURRENT-DATE-INFO REDEFINES CURRENT-DATE-FIELDS.
+           05  CURRENT-DATE-DIGITS.
+               10  CURRENT-YEAR    PIC 9(4).
+               10  CURRENT-MONTH   PIC 99.
+               10  CURRENT-DAY     PIC 99.
+           05  CURRENT-TIME-DIGITS.
+               10  CURRENT-HOUR    PIC 99.
+               10  CURRENT-MINUTE  PIC 99.
+               10  CURRENT-SECOND  PIC 99.
+           05  DIFF-FROM-GMT       PIC 9(4).
+      *
+       01  REPORT-DATE.
+           05  CURRENT-MONTH       PIC 99.
+           05  CURRENT-DAY         PIC 99.
+           05  CURRENT-YEAR        PIC 9(4).
+      *
+       01  HEADER-1.
+           05  DATE-FIELD  PIC 99/99/9999.
+           05              PIC X(19)   VALUE SPACES.
+           05              PIC X(21)   VALUE 'SUPERIOR WIDGETS INC.'.
+           05              PIC X(20)   VALUE SPACES.
+           05              PIC X(6)    VALUE 'PAGE #'.
+           05  PAGE-NUM    PIC 9(4).
+      *
+       01  HEADER-2.
+           05                  PIC X(32)   VALUE SPACES.
+           05                  PIC X(14)   VALUE 'PAYROLL REPORT'.
+           05                  PIC X(33)   VALUE SPACES.
+      *
+       01  COLUMN-HEADER.
+           05                  PIC X       VALUE SPACES.
+           05                  PIC X(10)   VALUE 'EMPLOYEE #'.
+           05                  PIC XXX     VALUE SPACES.
+           05                  PIC X(36)   VALUE 'EMPLOYEE NAME'.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(5)    VALUE 'HOURS'.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(9)    VALUE 'RATE'.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(8)    VALUE 'GROSSPAY'.
+      *
+       01  COLUMN-RULER.
+           05                  PIC X       VALUE SPACES.
+           05                  PIC X(11)   VALUE ALL '='.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(36)   VALUE ALL '='.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(5)    VALUE ALL '='.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(9)    VALUE ALL '='.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(10)   VALUE ALL '='.
+      *
+       01  DETAIL-LINE.
+           05                  PIC X       VALUE SPACES.
+           05  EMP-ID          PIC X(11).
+           05                  PIC XX      VALUE SPACES.
+           05  EMP-LAST        PIC X(20).
+           05                  PIC X       VALUE ','.
+           05  EMP-FIRST       PIC X(15).
+           05                  PIC XX      VALUE SPACES.
+           05  EMP-HOURS       PIC 99.99.
+           05                  PIC XXX      VALUE SPACES.
+           05  EMP-PAYRATE     PIC Z,ZZ9.99.
+           05                  PIC XX      VALUE SPACES.
+           05  EMP-GROSSPAY    PIC $ZZ,ZZ9.99.
+      *
+       01  TOTAL-LINE.
+           05                  PIC X(5)    VALUE SPACES.
+           05                  PIC X(6)    VALUE 'TOTAL:'.
+           05                  PIC X(37)   VALUE SPACES.
+           05  TOT-HOURS       PIC ZZ,ZZ9.99.
+           05                  PIC X(13)   VALUE SPACES.
+           05  TOT-GROSSPAY    PIC $ZZ,ZZ9.99.
+      *
+       PROCEDURE DIVISION.
+       MAIN-LINE-ROUTINE.
+           OPEN INPUT PAYROLL.
+           OPEN OUTPUT PAYRPT.
+           MOVE 'NO' TO EOF-FLAG.
+           MOVE FUNCTION CURRENT-DATE TO CURRENT-DATE-FIELDS.
+           MOVE CORRESPONDING CURRENT-DATE-DIGITS TO REPORT-DATE.
+           MOVE REPORT-DATE (1:8) TO DATE-FIELD.
+           PERFORM PROCESS-HEADER.
+           READ PAYROLL RECORD
+               AT END MOVE 'YES' TO EOF-FLAG.
+           PERFORM PROCESS-PAYROLL UNTIL EOF-FLAG = 'YES'.
+      *
+           PERFORM PROCESS-END-OF-REPORT.
+           CLOSE PAYROLL.
+           CLOSE PAYRPT.
+           STOP RUN.
+      *
+       PROCESS-HEADER.
+           ADD 1 TO PAGE-NUMBER.
+           INITIALIZE LINES-PRINTED.
+           MOVE PAGE-NUMBER TO PAGE-NUM OF HEADER-1.
+           MOVE HEADER-1 TO RECORD-OUT.
+           WRITE RECORD-OUT.
+           MOVE HEADER-2 TO RECORD-OUT.
+           WRITE RECORD-OUT.
+           MOVE BLANK-LINE TO RECORD-OUT.
+           WRITE RECORD-OUT.
+           MOVE COLUMN-HEADER TO RECORD-OUT.
+           WRITE RECORD-OUT.
+           MOVE COLUMN-RULER TO RECORD-OUT.
+           WRITE RECORD-OUT.
+           ADD 5 TO LINES-PRINTED.
+      *
+       PROCESS-PAYROLL.
+           ADD 1 TO RECORD-COUNTER.
+           MOVE CORRESPONDING PAYREC-IN TO DETAIL-LINE.
+           MOVE SPACES TO DETAIL-LINE (15:36).
+           STRING EMP-LAST OF PAYREC-IN DELIMITED  BY " "
+               ", " DELIMITED  BY SIZE
+               EMP-FIRST OF PAYREC-IN DELIMITED  BY " "
+               INTO DETAIL-LINE (15:).
+           IF EMP-HOURS OF PAYREC-IN IS GREATER THAN 40
+               COMPUTE GROSSPAY = 40 * EMP-PAYRATE OF PAYREC-IN
+               + (EMP-HOURS OF PAYREC-IN - 40) * EMP-PAYRATE OF
+               PAYREC-IN * 1.5
+           ELSE
+               MULTIPLY EMP-HOURS OF PAYREC-IN BY
+               EMP-PAYRATE OF PAYREC-IN GIVING GROSSPAY
+           END-IF.
+           MOVE GROSSPAY TO EMP-GROSSPAY.
+           ADD GROSSPAY TO TOTAL-GROSSPAY.
+           ADD EMP-HOURS OF PAYREC-IN TO TOTAL-HOURS.
+           MOVE DETAIL-LINE TO RECORD-OUT.
+           WRITE RECORD-OUT.
+           ADD 1 TO LINES-PRINTED.
+           READ PAYROLL RECORD
+               AT END MOVE 'YES' TO EOF-FLAG.
+      *
+       PROCESS-END-OF-REPORT.
+           MOVE ALL '.' TO RECORD-OUT.
+           WRITE RECORD-OUT.
+           MOVE TOTAL-HOURS TO TOT-HOURS.
+           MOVE TOTAL-GROSSPAY TO TOT-GROSSPAY.
+           MOVE TOTAL-LINE TO RECORD-OUT.
+           WRITE RECORD-OUT.

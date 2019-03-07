@@ -1,0 +1,76 @@
+      IDENTIFICATION DIVISION.
+       PROGRAM-ID.
+           SORT1.
+      ********************************************************
+      * Purpose: Read in an 80 byte record and use an internal
+      *    sort prior to giving it to the "process" routine.
+      ********************************************************
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT INFILE ASSIGN TO INFILE
+               FILE STATUS IS INFILE-STATUS.
+           SELECT OUTFILE ASSIGN TO OUTFILE
+               FILE STATUS IS OUTFILE-STATUS.
+           SELECT SORTFILE ASSIGN TO SORTFILE.
+      *
+       DATA DIVISION.
+       FILE SECTION.
+       SD  SORTFILE.
+       01  SORT-REC.
+           05  ID-NUM          PIC X(5).
+           05  LAST-NAME       PIC X(20).
+           05  FIRST-NAME      PIC X(15).
+           05  MI              PIC X(1).
+           05  FILLER          PIC X(39).
+       FD  INFILE.
+       01  IN-REC.
+           05  ID-NUM          PIC X(5).
+           05  LAST-NAME       PIC X(20).
+           05  FIRST-NAME      PIC X(15).
+           05  MI              PIC X(1).
+           05  FILLER          PIC X(39).
+       FD  OUTFILE.
+       01  OUT-REC.
+           05  ID-NUM          PIC X(5).
+           05  LAST-NAME       PIC X(20).
+           05  FIRST-NAME      PIC X(15).
+           05  MI              PIC X(1).
+           05  FILLER          PIC X(39).
+       WORKING-STORAGE SECTION.
+       77  EOF-FLAG            PIC XXX.
+       77  OUTFILE-STATUS      PIC 99.
+       77  INFILE-STATUS       PIC 99.
+      *
+       PROCEDURE DIVISION.
+       MAIN-LINE-ROUTINE.
+           OPEN INPUT INFILE.
+           SORT SORTFILE
+               ON ASCENDING KEY ID-NUM OF SORT-REC
+               INPUT PROCEDURE READ-IN-RECORDS
+               OUTPUT PROCEDURE WRITE-OUT-RECORDS.
+           STOP RUN.
+      *
+       READ-IN-RECORDS.
+           MOVE 'NO' TO EOF-FLAG.
+           OPEN INPUT INFILE.
+           READ INFILE AT END MOVE 'YES' TO EOF-FLAG.
+           PERFORM UNTIL EOF-FLAG = 'YES'
+               RELEASE SORT-REC FROM IN-REC
+               READ INFILE AT END MOVE 'YES' TO EOF-FLAG
+           END-PERFORM.
+           CLOSE INFILE.
+      *
+       WRITE-OUT-RECORDS.
+           OPEN OUTPUT OUTFILE.
+           MOVE 'NO' TO EOF-FLAG.
+           RETURN SORTFILE INTO OUT-REC
+               AT END MOVE 'YES' TO EOF-FLAG
+           END-RETURN
+           PERFORM UNTIL EOF-FLAG = 'YES'
+               WRITE OUT-REC
+               RETURN SORTFILE INTO OUT-REC
+                   AT END MOVE 'YES' TO EOF-FLAG
+               END-RETURN
+           END-PERFORM.
+           CLOSE OUTFILE.

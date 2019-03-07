@@ -1,0 +1,41 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.
+           COPIER.
+      ************************************************************
+      *    TAKES AN 80 BYTE FILE AND COPIES IT TO ANOTHER FILE   *
+      ************************************************************
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT CARDS ASSIGN TO CARDS.
+           SELECT PRINTER ASSIGN TO PRINTER.
+      *
+       DATA DIVISION.
+       FILE SECTION.
+       FD  CARDS
+           LABEL RECORDS ARE OMITTED.
+       01  CARD-IN-RECORD           PICTURE X(80).
+       FD  PRINTER
+           LABEL RECORDS ARE OMITTED.
+       01  LINE-OUT-RECORD          PICTURE X(80).
+       WORKING-STORAGE SECTION.
+       01  EOF-FLAG                 PICTURE XXX.
+ 
+       PROCEDURE DIVISION.
+       MAIN-LINE-ROUTINE.
+           OPEN INPUT CARDS
+                OUTPUT PRINTER.
+           MOVE 'NO' TO EOF-FLAG.
+      * DO A PRIMARY READ BEFORE LOOP... SET EOF FLAG
+           READ CARDS
+                   AT END MOVE 'YES' TO EOF-FLAG         .
+           PERFORM PROCESS-WRITE-READ-PARAGRAPH
+                   UNTIL EOF-FLAG = 'YES'.
+           CLOSE CARDS
+                   PRINTER.
+           STOP RUN.
+       PROCESS-WRITE-READ-PARAGRAPH.
+           MOVE CARD-IN-RECORD TO LINE-OUT-RECORD.
+           WRITE LINE-OUT-RECORD.
+           READ CARDS
+                   AT END MOVE 'YES' TO EOF-FLAG.

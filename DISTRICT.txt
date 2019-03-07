@@ -1,0 +1,328 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID
+           DISTRICT.
+      *
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT SALES    ASSIGN TO SALES
+               FILE STATUS IS SALES-FS.
+           SELECT RPTA     ASSIGN TO RPTA.
+           SELECT RPTB     ASSIGN TO RPTB.
+      *
+       DATA DIVISION.
+       FILE SECTION.
+       FD  SALES.
+       01  SALES-IN.
+           05  FIRST-NAME              PIC X(15).
+           05  LAST-NAME               PIC X(20).
+           05  DISTRICT-NUM            PIC 9(3).
+           05  SSNUM                   PIC 9(9).
+           05  QTR-SALE OCCURS 4 TIMES PIC 9(6)V99.
+           05  FILLER                  PIC X.
+       FD  RPTA.
+       01  RPT-OUTA             PIC X(132).
+       FD  RPTB.
+       01  RPT-OUTB             PIC X(80).
+      *
+       WORKING-STORAGE SECTION.
+       77  EOF-FLAG                PIC XXX.
+       77  BLANK-LINE              PIC X(132)  VALUE SPACES.
+       77  BLANK-LINE-SMALL        PIC X(80)   VALUE SPACES.
+       77  TOTAL-EMPS              PIC 999     VALUE 0.
+       77  TOTAL-DISTRICTS         PIC 999     VALUE 0.
+       77  LOOP-COUNTER            PIC 999     VALUE 0.
+       77  GRAND-TOTALS            PIC 9(6)V99.
+       77  TOTAL-GRAND-TOTALS      PIC 9(6)V99.
+       77  DISTRICT-TOTALS         PIC 9(6)V99.
+       77  SALES-FS                PIC 99      VALUE 0.
+       77  DOTS                    PIC X(36)   VALUE ALL '.'.
+      *
+       01  REPORT-VALUES.
+           05  PAGE-NUMBER         PIC 9(4).
+           05  PAGE-NUMBER-B       PIC 9(4).
+           05  LINES-PRINTED       PIC 99      VALUE 66.
+           05  LINES-PER-PAGE      PIC 99      VALUE 66.
+           05  LINES-PRINTED-B     PIC 99      VALUE 66.
+           05  RECORD-COUNTER      PIC 9(4).
+      *
+       01  CURRENT-DATE-FIELDS     PIC X(21).
+       01  CURRENT-DATE-INFO REDEFINES CURRENT-DATE-FIELDS.
+           05  CURRENT-DATE-DIGITS.
+               10  CURRENT-YEAR    PIC 9(4).
+               10  CURRENT-MONTH   PIC 99.
+               10  CURRENT-DAY     PIC 99.
+           05  CURRENT-TIME-DIGITS.
+               10  CURRENT-HOUR    PIC 99.
+               10  CURRENT-MINUTE  PIC 99.
+               10  CURRENT-SECOND  PIC 99.
+           05  DIFF-FROM-GMT       PIC 9(4).
+      *
+       01  REPORT-DATE.
+           05  CURRENT-MONTH       PIC 99.
+           05  CURRENT-DAY         PIC 99.
+           05  CURRENT-YEAR        PIC 9(4).
+      *
+       01  PAGE-HEADER.
+           05  DATE-FIELD   PIC 99/99/9999.
+           05               PIC X(44)   VALUE SPACES.
+           05               PIC X(23)   VALUE 'ANNUAL SALES FOR AGENTS'.
+           05               PIC X(45)   VALUE SPACES.
+           05               PIC X(6)    VALUE 'PAGE #'.
+           05  PAGE-NUM     PIC 9(4).
+      *
+       01  PAGE-HEADER-B.
+           05  DATE-FIELD-B PIC 99/99/9999.
+           05               PIC X(18)   VALUE SPACES.
+           05               PIC X(24)   VALUE
+                                        'ANNUAL SALES BY DISTRICT'.
+           05               PIC X(18)   VALUE SPACES.
+           05               PIC X(6)    VALUE 'PAGE #'.
+           05  PAGE-NUM-B   PIC 9(4).
+      *
+       01  COLUMN-HEADER.
+           05                  PIC X(5)    VALUE SPACES.
+           05                  PIC X(11)   VALUE 'SS NUMBER'.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(21)   VALUE
+                                           'LAST NAME, FIRST NAME'.
+           05                  PIC X(17)   VALUE SPACES.
+           05                  PIC X(11)   VALUE 'QUARTER #1 '.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(11)   VALUE 'QUARTER #2 '.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(11)   VALUE 'QUARTER #3 '.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(11)   VALUE 'QUARTER #4 '.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(11)   VALUE 'AVG SALES  '.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(11)   VALUE 'GRAND TOTAL'.
+      *
+       01  COLUMN-RULER.
+           05                  PIC X(5)    VALUE SPACES.
+           05                  PIC X(11)   VALUE ALL '='.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(36)   VALUE ALL '='.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(11)   VALUE ALL '='.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(11)   VALUE ALL '='.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(11)   VALUE ALL '='.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(11)   VALUE ALL '='.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(11)   VALUE ALL '='.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(11)   VALUE ALL '='.
+      *
+       01  DISTRICT-HEADER.
+           05                  PIC X       VALUE SPACES.
+           05                  PIC X(9)    VALUE 'DISTRICT '.
+           05  DISTRICT-NUM    PIC 9(3)    VALUE 0.
+           05                  PIC X(119)  VALUE SPACES.
+      *
+       01  DETAIL-LINE.
+           05                  PIC X(5)    VALUE SPACES.
+           05  SSNUM           PIC 999/99/9999.
+           05                  PIC XX      VALUE SPACES.
+           05  LAST-NAME       PIC X(20).
+           05                  PIC X       VALUE ','.
+           05  FIRST-NAME      PIC X(15).
+           05                  PIC XX      VALUE SPACES.
+           05  QTR-SALE1       PIC $ZZZ,ZZ9.99.
+           05                  PIC XX      VALUE SPACES.
+           05  QTR-SALE2       PIC $ZZZ,ZZ9.99.
+           05                  PIC XX      VALUE SPACES.
+           05  QTR-SALE3       PIC $ZZZ,ZZ9.99.
+           05                  PIC XX      VALUE SPACES.
+           05  QTR-SALE4       PIC $ZZZ,ZZ9.99.
+           05                  PIC XX      VALUE SPACES.
+           05  AVG-SALE        PIC $ZZZ,ZZ9.99.
+           05                  PIC XX      VALUE SPACES.
+           05  GRAND-TOTAL     PIC $ZZZ,ZZ9.99.
+      *
+       01  DETAIL-LINE-B.
+           05  DISTRICT-NUM    PIC 9(3).
+           05                  PIC X(5)    VALUE SPACES.
+           05  DISTRICT-TOTAL  PIC $ZZZ,ZZ9.99.
+           05                  PIC X(61)   VALUE SPACES.
+      *
+       01  ANNUAL-RULER.
+           05                  PIC X(121)  VALUE SPACES.
+           05                  PIC X(11)   VALUE ALL '='.
+      *
+       01  DISTRICT-FOOTER.
+           05                  PIC X(18)   VALUE SPACES.
+           05                  PIC X(17)   VALUE 'TOTAL EMPLOYEES: '.
+           05  TOTAL-EMP       PIC 999     VALUE 0.
+           05                  PIC X(83)   VALUE SPACES.
+           05  DISTRICT-TOTAL  PIC $ZZZ,ZZ9.99.
+      *
+       01  DASHES-LINE.
+           05                  PIC X(60)   VALUE ALL '-'.
+           05                  PIC X(12)   VALUE 'Report Recap'.
+           05                  PIC X(60)   VALUE ALL '-'.
+      *
+       01  TOTAL-LINE.
+           05                  PIC X(9)    VALUE SPACES.
+           05                  PIC X(13)   VALUE 'GRAND TOTAL: '.
+           05  GRAND-TOTAL     PIC $ZZZ,ZZ9.99.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(17)   VALUE 'TOTAL DISTRICTS: '.
+           05  TOTAL-DISTRICT  PIC 999     VALUE 0.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(17)   VALUE 'TOTAL EMPLOYEES: '.
+           05  TOTAL-EMP       PIC 999     VALUE 0.
+           05                  PIC X(55)   VALUE SPACES.
+      *
+       01  TOTAL-LINE-B.
+           05                  PIC X(9)    VALUE SPACES.
+           05                  PIC X(13)   VALUE 'GRAND TOTAL: '.
+           05  GRAND-TOTAL     PIC $ZZZ,ZZ9.99.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(17)   VALUE 'TOTAL DISTRICTS: '.
+           05  TOTAL-DISTRICT  PIC 999     VALUE 0.
+           05                  PIC XX      VALUE SPACES.
+           05                  PIC X(17)   VALUE 'TOTAL EMPLOYEES: '.
+           05  TOTAL-EMP       PIC 999     VALUE 0.
+           05                  PIC X(3)    VALUE SPACES.
+      *
+       PROCEDURE DIVISION.
+       MAIN-LINE-ROUTINE.
+           OPEN INPUT SALES.
+           OPEN OUTPUT RPTA.
+           OPEN OUTPUT RPTB.
+           MOVE 'NO' TO EOF-FLAG.
+           MOVE FUNCTION CURRENT-DATE TO CURRENT-DATE-FIELDS.
+           MOVE CORRESPONDING CURRENT-DATE-DIGITS TO REPORT-DATE.
+           MOVE REPORT-DATE (1:8) TO DATE-FIELD.
+           MOVE REPORT-DATE (1:8) TO DATE-FIELD-B.
+           READ SALES RECORD.
+           PERFORM PROCESS-REPORT
+               UNTIL EOF-FLAG = 'YES'.
+           READ SALES RECORD AT END MOVE 'YES' TO EOF-FLAG.
+           CLOSE SALES.
+           CLOSE RPTA.
+           CLOSE RPTB.
+           STOP RUN.
+      *
+       PROCESS-REPORT.
+           PERFORM PROCESS-HEADER.
+           PERFORM PROCESS-DISTRICT-HEADER.
+           PERFORM PROCESS-DETAIL-LINE.
+           PERFORM PROCESS-DISTRICT-FOOTER.
+           IF EOF-FLAG = 'YES'
+               PERFORM PROCESS-END-OF-REPORT
+           END-IF.
+      *
+       PROCESS-HEADER.
+           IF LINES-PRINTED = 66
+               ADD 1 TO PAGE-NUMBER
+               INITIALIZE LINES-PRINTED
+               MOVE PAGE-NUMBER TO PAGE-NUM
+               MOVE PAGE-HEADER TO RPT-OUTA
+               WRITE RPT-OUTA
+               MOVE BLANK-LINE TO RPT-OUTA
+               WRITE RPT-OUTA
+               MOVE COLUMN-HEADER TO RPT-OUTA
+               WRITE RPT-OUTA
+               MOVE COLUMN-RULER TO RPT-OUTA
+               WRITE RPT-OUTA
+               ADD 4 TO LINES-PRINTED
+           END-IF.
+           IF LINES-PRINTED-B = 66
+               ADD 1 TO PAGE-NUMBER-B
+               MOVE PAGE-NUMBER-B TO PAGE-NUM-B
+               MOVE PAGE-HEADER-B TO RPT-OUTB
+               WRITE RPT-OUTB
+               MOVE BLANK-LINE TO RPT-OUTB
+               WRITE RPT-OUTB
+               ADD 2 TO LINES-PRINTED-B
+           END-IF.
+      *
+       PROCESS-DISTRICT-HEADER.
+           IF DISTRICT-NUM IN SALES-IN
+               NOT EQUAL TO DISTRICT-NUM IN DISTRICT-HEADER
+               MOVE BLANK-LINE TO RPT-OUTA
+               WRITE RPT-OUTA
+               INITIALIZE TOTAL-EMPS
+               INITIALIZE DISTRICT-TOTALS
+               MOVE DISTRICT-NUM IN SALES-IN
+                   TO DISTRICT-NUM IN DISTRICT-HEADER
+               MOVE DISTRICT-HEADER TO RPT-OUTA
+               WRITE RPT-OUTA
+               ADD 2 TO LINES-PRINTED
+               ADD 1 TO TOTAL-DISTRICTS
+           END-IF.
+      *
+       PROCESS-DETAIL-LINE.
+           ADD 1 TO TOTAL-EMPS.
+           ADD 1 TO TOTAL-EMP IN TOTAL-LINE.
+           ADD 1 TO TOTAL-EMP IN TOTAL-LINE-B.
+           INITIALIZE GRAND-TOTALS, AVG-SALE.
+           MOVE DOTS TO DETAIL-LINE (19:54).
+           STRING LAST-NAME OF SALES-IN DELIMITED BY " "
+               ", " DELIMITED  BY SIZE
+               FIRST-NAME OF SALES-IN DELIMITED BY " "
+               INTO DETAIL-LINE (19:).
+           MOVE SSNUM IN SALES-IN TO SSNUM IN DETAIL-LINE.
+           MOVE QTR-SALE(1) TO QTR-SALE1.
+           MOVE QTR-SALE(2) TO QTR-SALE2.
+           MOVE QTR-SALE(3) TO QTR-SALE3.
+           MOVE QTR-SALE(4) TO QTR-SALE4.
+           MOVE 1 TO LOOP-COUNTER.
+           PERFORM UNTIL LOOP-COUNTER = 5
+               ADD QTR-SALE(LOOP-COUNTER) TO GRAND-TOTALS
+               ADD 1 TO LOOP-COUNTER
+           END-PERFORM.
+           DIVIDE GRAND-TOTALS BY 4 GIVING AVG-SALE.
+           MOVE GRAND-TOTALS TO GRAND-TOTAL IN DETAIL-LINE.
+           ADD GRAND-TOTALS TO DISTRICT-TOTALS.
+           ADD GRAND-TOTALS TO TOTAL-GRAND-TOTALS.
+           MOVE DETAIL-LINE TO RPT-OUTA.
+           WRITE RPT-OUTA.
+           ADD 1 TO LINES-PRINTED.
+
+           READ SALES RECORD AT END MOVE 'YES' TO EOF-FLAG.
+      *
+       PROCESS-DISTRICT-FOOTER.
+           IF DISTRICT-NUM IN SALES-IN
+               NOT EQUAL DISTRICT-NUM IN DISTRICT-HEADER
+               OR EOF-FLAG = 'YES'
+               MOVE COLUMN-RULER TO RPT-OUTA
+               WRITE RPT-OUTA
+               MOVE TOTAL-EMPS TO TOTAL-EMP IN DISTRICT-FOOTER
+               MOVE DISTRICT-TOTALS TO DISTRICT-TOTAL
+                   IN DISTRICT-FOOTER
+               MOVE DISTRICT-FOOTER TO RPT-OUTA
+               WRITE RPT-OUTA
+               ADD 2 TO LINES-PRINTED
+               MOVE DISTRICT-NUM IN DISTRICT-HEADER TO DISTRICT-NUM
+                   IN DETAIL-LINE-B
+               MOVE DISTRICT-TOTALS TO DISTRICT-TOTAL
+                   IN DETAIL-LINE-B
+               MOVE DETAIL-LINE-B TO RPT-OUTB
+               WRITE RPT-OUTB
+               ADD 1 TO LINES-PRINTED-B
+           END-IF.
+      *
+       PROCESS-END-OF-REPORT.
+           MOVE BLANK-LINE TO RPT-OUTA.
+           WRITE RPT-OUTA.
+           WRITE RPT-OUTA.
+           MOVE DASHES-LINE TO RPT-OUTA.
+           WRITE RPT-OUTA.
+           MOVE TOTAL-DISTRICTS TO TOTAL-DISTRICT IN TOTAL-LINE.
+           MOVE TOTAL-GRAND-TOTALS TO GRAND-TOTAL IN TOTAL-LINE.
+           MOVE TOTAL-LINE TO RPT-OUTA.
+           WRITE RPT-OUTA.
+           ADD 4 TO LINES-PRINTED.
+           MOVE BLANK-LINE TO RPT-OUTB.
+           WRITE RPT-OUTB.
+           MOVE TOTAL-DISTRICTS TO TOTAL-DISTRICT IN TOTAL-LINE-B.
+           MOVE TOTAL-GRAND-TOTALS TO GRAND-TOTAL IN TOTAL-LINE-B.
+           MOVE TOTAL-LINE-B TO RPT-OUTB.
+           WRITE RPT-OUTB.
+           ADD 2 TO LINES-PRINTED-B.

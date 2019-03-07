@@ -1,0 +1,117 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.
+           MULTPULL.
+      *
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT INS ASSIGN TO INS
+               FILE STATUS IS INS-STATUS.
+           SELECT INFILE ASSIGN TO INFILE
+               FILE STATUS IS INFILE-STATUS.
+           SELECT OUTFILE ASSIGN TO OUTFILE
+               FILE STATUS IS OUTFILE-STATUS.
+      *
+       DATA DIVISION.
+       FILE SECTION.
+       FD  INS.
+       01  INS-REC.
+           05  STR-LNG         PIC ZZ9.
+           05  POS             PIC Z9.
+           05  STR-VAL         PIC X(20).
+           05  FILLER          PIC X(55).
+      *
+       FD  INFILE.
+       01  IN-REC              PIC X(80).
+      *
+       FD  OUTFILE.
+       01  OUT-REC             PIC X(80).
+      *
+       WORKING-STORAGE SECTION.
+       01  CURRENT-DATE-FIELDS     PIC X(21).
+       01  CURRENT-DATE-INFO REDEFINES CURRENT-DATE-FIELDS.
+           05  CURRENT-DATE-DIGITS.
+               10  CURRENT-YEAR    PIC 9(4).
+               10  CURRENT-MONTH   PIC 99.
+               10  CURRENT-DAY     PIC 99.
+           05  CURRENT-TIME-DIGITS.
+               10  CURRENT-HOUR    PIC 99.
+               10  CURRENT-MINUTE  PIC 99.
+               10  CURRENT-SECOND  PIC 99.
+           05  DIFF-FROM-GMT       PIC 9(4).
+      *
+       01  REPORT-DATE.
+           05  CURRENT-MONTH       PIC 99.
+           05  CURRENT-DAY         PIC 99.
+           05  CURRENT-YEAR        PIC 9(4).
+      *
+       01  PAGE-HEADER         PIC 99/99/9999.
+      *
+       01  RECS.
+           05  REC-READ        PIC X(14) VALUE 'RECORDS READ: '.
+           05  RECR-NUM        PIC 9(3)  VALUE 0.
+           05                  PIC X(3)  VALUE ' | '.
+           05  SIG-READ        PIC X(17) VALUE 'SIGNATURES READ: '.
+           05  SIG-NUM         PIC 9(3)  VALUE 0.
+           05                  PIC X(3)  VALUE ' | '.
+           05  REC-WRITTEN     PIC X(17) VALUE 'RECORDS WRITTEN: '.
+           05  REC-NUM         PIC 9(3)  VALUE 0.
+           05  FILLER          PIC X(17) VALUE SPACES.
+      *
+       77  EOF-FLAG            PIC XXX.
+       77  BLANK-LINE          PIC X(80) VALUE SPACES.
+       77  LINES-PRINTED       PIC 99    VALUE 66.
+       77  END-REC             PIC XXX.
+       77  INS-STATUS          PIC 99    VALUE 0.
+       77  OUTFILE-STATUS      PIC 99    VALUE 0.
+       77  INFILE-STATUS       PIC 99    VALUE 0.
+      *
+       PROCEDURE DIVISION.
+       MAIN-LINE-ROUTINE.
+           OPEN INPUT INS.
+           OPEN OUTPUT OUTFILE.
+           MOVE FUNCTION CURRENT-DATE TO CURRENT-DATE-FIELDS.
+           MOVE CORRESPONDING CURRENT-DATE-DIGITS TO REPORT-DATE.
+           MOVE REPORT-DATE (1:8) TO PAGE-HEADER.
+           MOVE PAGE-HEADER TO OUT-REC.
+           WRITE OUT-REC.
+           MOVE BLANK-LINE TO OUT-REC.
+           MOVE 'NO' TO EOF-FLAG.
+           INITIALIZE SIG-NUM.
+           READ INS AT END MOVE 'YES' TO EOF-FLAG.
+           PERFORM PROCESS-SEARCH UNTIL EOF-FLAG = 'YES'.
+           PERFORM END-OF-REPORT.
+           CLOSE INS.
+           CLOSE OUTFILE.
+           STOP RUN.
+      *
+       PROCESS-SEARCH.
+           MOVE 'NO' TO EOF-FLAG.
+           MOVE 'NO' TO END-REC.
+           ADD 1 TO SIG-NUM.
+           OPEN INPUT INFILE.
+           READ INFILE AT END MOVE 'YES' TO END-REC.
+           PERFORM UNTIL END-REC = 'YES'
+               ADD 1 TO RECR-NUM
+               IF INS-REC(6:STR-LNG) EQUAL IN-REC(POS:STR-LNG)
+                   MOVE IN-REC TO OUT-REC
+                   WRITE OUT-REC
+                   ADD 1 TO REC-NUM
+               END-IF
+               READ INFILE AT END MOVE 'YES' TO END-REC
+           END-PERFORM.
+           CLOSE INFILE.
+           READ INS AT END MOVE 'YES' TO EOF-FLAG.
+      *
+       END-OF-REPORT.
+           IF SIG-NUM EQUAL 0
+               ADD 4 TO INS-STATUS
+           END-IF.
+           IF RECR-NUM EQUAL 0
+               ADD 8 TO INFILE-STATUS
+           END-IF.
+           MOVE BLANK-LINE TO OUT-REC.
+           WRITE OUT-REC.
+           WRITE OUT-REC.
+           MOVE RECS TO OUT-REC.
+           WRITE OUT-REC.
